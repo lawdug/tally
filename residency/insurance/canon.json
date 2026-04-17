@@ -1,0 +1,50 @@
+{
+  "version": "0.1",
+  "issued_at": 1744896000,
+  "notes": {
+    "status": "v0.1 starter — authoritative sources pending",
+    "summary": "Placeholder vocabulary for Insurance Pillar v0.1. Policy types, coverage scopes, claim categories, and term lengths are illustrative descriptive tags. Real deployments must substitute insurer/jurisdiction-specific terms and policy-document references before any canon_root is anchored for public use. Nothing here constitutes a coverage guarantee, rate, exclusion, or binding policy term.",
+    "upstream": "ram.school"
+  },
+  "policy_types": [
+    "health",
+    "liability",
+    "property",
+    "travel",
+    "long_term_residency",
+    "family_umbrella",
+    "arts_equipment",
+    "tenant_contents"
+  ],
+  "coverage_scopes": [
+    "primary_resident",
+    "family_dependents",
+    "property_contents",
+    "arts_equipment",
+    "third_party_liability",
+    "emergency_repatriation"
+  ],
+  "claim_categories": [
+    "medical",
+    "dental",
+    "emergency_evac",
+    "property_damage",
+    "theft",
+    "personal_liability",
+    "trip_interruption",
+    "equipment_loss"
+  ],
+  "term_lengths": [
+    "monthly",
+    "quarterly",
+    "annual",
+    "multi_year"
+  ],
+  "attestation_types": {
+    "policy_issuance": "records issuance of a policy with effective dates",
+    "claim_submission": "records submission of a claim under a policy",
+    "claim_settlement": "records final settlement of a submitted claim",
+    "coverage_proof": "confirms active coverage for a given resident / scope",
+    "bond_guarantee": "records a surety / bond backing a resident obligation"
+  }
+}

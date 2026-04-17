@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { coreLoader } from "../core";
 import { propertyLoader } from "../property";
 import { financeLoader } from "../finance";
+import { insuranceLoader } from "../insurance";
 import { canonRoot, merkleRoot, hashLeaf } from "../shared";
 
 /**
@@ -69,16 +70,21 @@ describe("core + property integration", () => {
       coreLoader.canonRoot(coreLoader.load()),
       propertyLoader.canonRoot(propertyLoader.load()),
       financeLoader.canonRoot(financeLoader.load()),
+      insuranceLoader.canonRoot(insuranceLoader.load()),
     ]);
-    assert.equal(roots.size, 3);
+    assert.equal(roots.size, 4);
   });
 
-  it("a multi-pillar anchor (core + property + finance) Merkle-roots cleanly", () => {
+  it("a multi-pillar anchor (all four canons) Merkle-roots cleanly", () => {
     const refs = [
       coreLoader.ref(coreLoader.load()),
       propertyLoader.ref(propertyLoader.load()),
       financeLoader.ref(financeLoader.load()),
+      insuranceLoader.ref(insuranceLoader.load()),
     ];
-    assert.match(merkleRoot(refs), /^[0-9a-f]{64}$/);
+    const root = merkleRoot(refs);
+    assert.match(root, /^[0-9a-f]{64}$/);
+    // Reordering pillars changes the anchor — leaf order is significant.
+    assert.notEqual(root, merkleRoot(refs.slice().reverse()));
   });
 });
