@@ -13,6 +13,6 @@
     "sourceMap": true,
     "outDir": "dist"
   },
-  "include": ["core/**/*", "property/**/*"],
+  "include": ["shared/**/*", "core/**/*", "property/**/*"],
   "exclude": ["node_modules", "dist"]
 }

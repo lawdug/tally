@@ -1,5 +1,7 @@
 export {
   DEFAULT_PROPERTY_CANON_PATH,
+  PropertyCanonLoader,
+  propertyLoader,
   loadPropertyCanon,
   propertyCanonRoot,
 } from "./loader";
