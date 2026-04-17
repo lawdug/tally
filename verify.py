@@ -1,34 +1,130 @@
+"""Kodokan Digital Dojo v0.1 — verifier utility.
+
+Operationalizes §7.3 step 1 (replay test vector) and §5.4 / §5.5
+(verification walkthrough and tamper detection).
+
+Run:  python3 verify.py
+"""
+
 import hashlib
-import json
-from typing import List, Dict
+from typing import Dict, List, Tuple
+
+
+# ---------- primitives ----------
 
 def sha256(data: bytes) -> bytes:
     return hashlib.sha256(data).digest()
 
-# Example: Replay the test vector from Section 5
-def replay_test_vector():
-    # Pre-computed leaves from your Section 5
-    leaf1 = bytes.fromhex("29836fad388b29a5d909e59c5e32c311c84dbdf9974eb49fd8c563a9d55457b8")
-    leaf2 = bytes.fromhex("6ec7e7deae79706ce331725e29e878db136ee90e8135e11dd45b63e4859ae405")
-    leaf3 = bytes.fromhex("4efeb6281e2e6d6178fdf998ef78c3dfd382bfc1a543f7f9a75edd7273b0874d")
-    leaf4 = bytes.fromhex("9b99e6fe1529dc917f7f7a52599c36afdb00f076b28f61a7e78637a0f03164ee")
 
-    round1 = sha256(leaf1 + leaf2)
-    round2 = sha256(leaf3 + leaf4)
-    match_root = sha256(round1 + round2)
+def compute_leaf(
+    match_id: str, rnd: str, seq: str, clock: str,
+    tori: str, uke: str, code: str, outcome: str,
+) -> Tuple[str, bytes]:
+    """Build the Section-5 preimage and return (preimage, 32-byte leaf)."""
+    preimage = f"{match_id}|{rnd}|{seq}|{clock}|{tori}|{uke}|{code}|{outcome}"
+    return preimage, sha256(preimage.encode("utf-8"))
 
-    expected = bytes.fromhex("dd6ec0cb84e5f2b96630e972c1b8e523d3faea324b2194f20fcf578ea6c77d54")
 
-    print("Test vector match_root:", match_root.hex())
-    print("Expected:", expected.hex())
-    print("Match:", match_root == expected)
+def merkle_pair(left: bytes, right: bytes) -> bytes:
+    """Pairwise merkle step: SHA-256(left || right) on raw bytes."""
+    return sha256(left + right)
 
-# Basic attestation verification skeleton
-def verify_attestation(attestation: Dict, anchored_canon_roots: set, inclusion_oracles):
-    p = attestation["payload"]
-    # Signature check, canon root check, inclusion proofs, promote() call would go here
-    # For now this is a structural skeleton
+
+def match_root_from_leaves(rounds: List[List[bytes]]) -> bytes:
+    """Compute match_root = SHA256(round_root_R1 || round_root_R2 || ...).
+
+    Each inner list is the leaves of one round in order.
+    """
+    round_roots = [
+        merkle_pair(r[0], r[1]) if len(r) == 2 else r[0]
+        for r in rounds
+    ]
+    if len(round_roots) == 1:
+        return round_roots[0]
+    acc = round_roots[0]
+    for rr in round_roots[1:]:
+        acc = merkle_pair(acc, rr)
+    return acc
+
+
+# ---------- replay ----------
+
+SECTION_5_LINES = [
+    ("M100", "R1", "001", "00:08", "Shiro", "Aka", "Nto",    "~"),
+    ("M100", "R1", "002", "00:35", "Shiro", "Aka", "Nis",    "\u00bd"),  # ½
+    ("M100", "R2", "001", "01:12", "Aka",   "Shiro", "Nosm", "~"),
+    ("M100", "R2", "002", "01:48", "Shiro", "Aka", "Go:ksg", "!#"),
+]
+
+SECTION_5_EXPECTED_ROOT = bytes.fromhex(
+    "dd6ec0cb84e5f2b96630e972c1b8e523d3faea324b2194f20fcf578ea6c77d54"
+)
+
+
+def replay_test_vector() -> bool:
+    """Recompute the Section 5 match_root from the published lines.
+
+    Returns True iff the computed root equals the anchored expected root.
+    """
+    leaves: List[bytes] = []
+    print("Recomputing leaves:")
+    for line in SECTION_5_LINES:
+        preimage, leaf = compute_leaf(*line)
+        leaves.append(leaf)
+        print(f"  {preimage}")
+        print(f"    leaf = {leaf.hex()}")
+    rounds = [leaves[:2], leaves[2:]]
+    match_root = match_root_from_leaves(rounds)
+    print()
+    print(f"Computed match_root : {match_root.hex()}")
+    print(f"Expected match_root : {SECTION_5_EXPECTED_ROOT.hex()}")
+    ok = match_root == SECTION_5_EXPECTED_ROOT
+    print(f"Match: {ok}")
+    return ok
+
+
+# ---------- tamper demo ----------
+
+def tamper_demo() -> None:
+    """Flip one character in leaf_1's preimage; show divergence."""
+    tampered = list(SECTION_5_LINES[0])
+    tampered[5] = "aka"  # "Aka" -> "aka"
+    _, bad_leaf = compute_leaf(*tampered)
+    _, good_leaf = compute_leaf(*SECTION_5_LINES[0])
+    print()
+    print("Tamper demo (flipping 'Aka' -> 'aka' in leaf_1 preimage):")
+    print(f"  good leaf_1 : {good_leaf.hex()}")
+    print(f"  bad  leaf_1 : {bad_leaf.hex()}")
+    # Rebuild the rest from good leaves
+    rest = [compute_leaf(*line)[1] for line in SECTION_5_LINES[1:]]
+    tampered_root = match_root_from_leaves([[bad_leaf, rest[0]], rest[1:]])
+    print(f"  tampered match_root : {tampered_root.hex()}")
+    print(f"  anchored match_root : {SECTION_5_EXPECTED_ROOT.hex()}")
+    print(f"  differ: {tampered_root != SECTION_5_EXPECTED_ROOT}")
+
+
+# ---------- attestation skeleton ----------
+
+def verify_attestation(
+    attestation: Dict,
+    anchored_canon_roots: set,
+    inclusion_oracles,
+) -> bool:
+    """Structural skeleton for §4.4 verify predicate.
+
+    Full implementation requires:
+      - Ed25519 signature verification over sha256(cbor(payload))
+      - payload.canon_root ∈ anchored_canon_roots
+      - inclusion proofs for each cite and kata_cite
+      - promote() predicate over the Match Registry (§6.3)
+    """
+    _ = attestation, anchored_canon_roots, inclusion_oracles
     return True
 
+
+# ---------- entry ----------
+
 if __name__ == "__main__":
-    replay_test_vector()
+    ok = replay_test_vector()
+    tamper_demo()
+    raise SystemExit(0 if ok else 1)
