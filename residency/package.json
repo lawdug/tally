@@ -7,6 +7,9 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+    "residency": "ts-node cli.ts",
+    "list": "ts-node cli.ts list",
+    "anchor": "ts-node cli.ts anchor",
     "test": "node --require ts-node/register --test --test-reporter=spec tests/canonicalize.test.ts tests/merkle.test.ts tests/validation.test.ts tests/loaders.test.ts tests/finance.test.ts tests/insurance.test.ts tests/integration.test.ts",
     "core:canon-root": "ts-node core/cli.ts canon-root",
     "core:validate": "ts-node core/cli.ts validate",
