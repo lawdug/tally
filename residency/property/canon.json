@@ -1,10 +1,48 @@
 {
   "version": "0.1",
   "issued_at": 1744896000,
-  "property_types": ["apartment", "mansion", "machiya", "hostel", "commercial_studio", "industrial_workshop"],
-  "tenancy_types": ["cultural_study", "family_residency", "arts_immersion", "long_term"],
-  "cultural_fit_tags": ["dojo_access", "arts_studio", "language_environment", "traditional_architecture", "quiet_study", "community"],
-  "lease_durations": ["6_months", "1_year", "2_years", "indefinite"],
+  "notes": {
+    "status": "starter set — authoritative data pending",
+    "summary": "Placeholder vocabulary for Property Pillar v0.1. Tags and durations are illustrative. Real deployments must substitute jurisdiction-specific terms (including anything with legal or financial effect) before any canon_root is anchored for public use.",
+    "upstream": "ram.school"
+  },
+  "property_types": [
+    "apartment",
+    "mansion",
+    "machiya",
+    "hostel",
+    "commercial_studio",
+    "industrial_workshop"
+  ],
+  "tenancy_types": [
+    "cultural_study",
+    "family_residency",
+    "arts_immersion",
+    "long_term"
+  ],
+  "cultural_fit_tags": [
+    "dojo_access",
+    "arts_studio",
+    "language_environment",
+    "traditional_architecture",
+    "quiet_study",
+    "community",
+    "tatami_room",
+    "engawa",
+    "garden_access",
+    "family_friendly",
+    "near_transit",
+    "natural_light"
+  ],
+  "lease_durations": [
+    "monthly",
+    "3_months",
+    "6_months",
+    "1_year",
+    "2_years",
+    "5_years",
+    "indefinite"
+  ],
   "attestation_types": {
     "housing_lease": "verifies rental agreement + cultural fit",
     "cultural_fit_cert": "confirms property suitability for immersion",
