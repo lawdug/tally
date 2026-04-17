@@ -4,10 +4,7 @@
 
 export { canonicalize } from "./canonicalize";
 export { sha256Hex, hashLeaf, merkleRoot } from "./merkle";
-export {
-  CoreCanon,
-  DEFAULT_CORE_CANON_PATH,
-  loadCoreCanon,
-  canonRoot,
-} from "./canon";
-export { ValidationResult, validateCoreCanon } from "./validate";
+export { DEFAULT_CORE_CANON_PATH, loadCoreCanon, canonRoot } from "./loader";
+export type { CoreCanon } from "./loader";
+export { validateCoreCanon } from "./validate";
+export type { ValidationResult } from "./validate";

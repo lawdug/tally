@@ -1,16 +1,17 @@
 #!/usr/bin/env ts-node
 import { readFileSync } from "fs";
-import { loadCoreCanon, canonRoot } from "./loader";
-import { validateCoreCanon } from "./validate";
-import { merkleRoot } from "./merkle";
+import { loadPropertyCanon, propertyCanonRoot } from "./loader";
+import { validatePropertyCanon } from "./validate";
+import { merkleRoot, canonRoot as coreCanonRoot, loadCoreCanon } from "../core";
 
 function usage(): void {
   const lines = [
     "usage: cli.ts <command> [args]",
     "",
     "commands:",
-    "  canon-root              print SHA-256 canon_root of core canon.json",
-    "  validate                validate core canon.json against the schema",
+    "  canon-root              print SHA-256 canon_root of property canon.json",
+    "  validate                validate property canon.json against the schema",
+    "  core-root               print canon_root of the Core canon this pillar builds on",
     "  merkle-root <file.json> print SHA-256 Merkle root over the JSON array in <file>",
   ];
   console.error(lines.join("\n"));
@@ -20,11 +21,11 @@ function main(argv: string[]): number {
   const cmd = argv[2];
   switch (cmd) {
     case "canon-root": {
-      console.log(canonRoot(loadCoreCanon()));
+      console.log(propertyCanonRoot(loadPropertyCanon()));
       return 0;
     }
     case "validate": {
-      const res = validateCoreCanon(loadCoreCanon());
+      const res = validatePropertyCanon(loadPropertyCanon());
       if (res.valid) {
         console.log("valid");
         return 0;
@@ -32,6 +33,10 @@ function main(argv: string[]): number {
       console.error("invalid:");
       for (const e of res.errors) console.error("  - " + e);
       return 1;
+    }
+    case "core-root": {
+      console.log(coreCanonRoot(loadCoreCanon()));
+      return 0;
     }
     case "merkle-root": {
       const file = argv[3];
