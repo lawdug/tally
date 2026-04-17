@@ -229,4 +229,119 @@ in one schema.
 5. Test vector: one full shiai scored end-to-end in Section-2 notation with
    a recomputed match_root.
 
+---
+
+## Section 4 — Sensei Attestation Signature Format
+
+### 4.1 What it attests
+A sensei attestation is the **dojo half of the split tally** for a rank claim.
+It does not create rank; it witnesses that a specific set of match leaves and
+kata completions satisfy a specific rank predicate at a specific moment.
+
+### 4.2 Canonical payload (CBOR-serialized before signing)
+```
+{
+  "v":          1,                         // attestation schema version
+  "subject":    <judoka_pubkey_32B>,       // who is being attested
+  "target":     "shodan" | "nidan" | ... | "6kyu",
+  "canon_root": <32B>,                     // Section-1 JSON root at time of signing
+  "citations": [
+    { "match_root": <32B>, "leaf_index": <u32> },
+    ...
+  ],
+  "kata_cites": [
+    { "kata": "Katame-no-Kata", "match_root": <32B>, "leaf_index": <u32> },
+    ...
+  ],
+  "issued_at":  <unix_seconds>,
+  "dojo_id":    <string>,
+  "sensei":     <sensei_pubkey_32B>
+}
+```
+
+### 4.3 Signature
+```
+sig = Ed25519.sign(sensei_privkey, sha256(cbor(payload)))
+attestation = { payload, sig }
+```
+Ed25519 chosen for 64-byte signatures, deterministic output, and fit with
+existing on-chain anchor tooling.
+
+### 4.4 Verification predicate
+```
+valid(attestation) ⇐
+   Ed25519.verify(payload.sensei, sig, sha256(cbor(payload)))
+ ∧ payload.canon_root ∈ anchored_canon_roots
+ ∧ ∀ cite ∈ payload.citations  : inclusion_proof(cite.leaf_index, cite.match_root)
+ ∧ ∀ kc   ∈ payload.kata_cites : inclusion_proof(kc.leaf_index,   kc.match_root)
+ ∧ promote(payload.subject, payload.target)   // predicate from §3.2
+```
+A verifier needs only: the attestation, the cited match_roots (public anchors),
+and the current canon root. No dojo-internal data required.
+
+### 4.5 Revocation
+Attestations are **not mutable**. A withdrawal is a new, countersigned
+`revocation` record citing the original attestation's hash:
+```
+revocation = { prior: sha256(cbor(attestation)), reason_code, sensei_sig, board_sig }
+```
+Revocations append; the audit trail remains complete.
+
+---
+
+## Section 5 — End-to-End Shiai Test Vector
+
+Only techniques verbatim from Section 1 JSON are used. Real SHA-256 computed.
+
+### 5.1 Match script (Section-2 notation)
+```
+M100.R1.001  00:08  Shiro→Aka   Nto~
+M100.R1.002  00:35  Shiro→Aka   Nis½
+M100.R2.001  01:12  Aka→Shiro   Nosm~
+M100.R2.002  01:48  Shiro→Aka   Go:ksg!#   winner=Shiro
+```
+
+### 5.2 Encoding spec (pinned for this vector)
+```
+preimage   = UTF-8( match_id | round | seq | clock | tori | uke | code | outcome )
+leaf       = SHA-256(preimage)                  -- 32 bytes
+round_root = SHA-256( leaf_1 ∥ leaf_2 )         -- raw bytes concatenated
+match_root = SHA-256( round_root_R1 ∥ round_root_R2 )
+```
+Separator is the ASCII pipe `|` (0x7C). No trailing newline.
+
+### 5.3 Computed vector
+```
+preimages:
+  M100|R1|001|00:08|Shiro|Aka|Nto|~
+  M100|R1|002|00:35|Shiro|Aka|Nis|½
+  M100|R2|001|01:12|Aka|Shiro|Nosm|~
+  M100|R2|002|01:48|Shiro|Aka|Go:ksg|!#
+
+leaves:
+  leaf_1 : 29836fad388b29a5d909e59c5e32c311c84dbdf9974eb49fd8c563a9d55457b8
+  leaf_2 : 6ec7e7deae79706ce331725e29e878db136ee90e8135e11dd45b63e4859ae405
+  leaf_3 : 4efeb6281e2e6d6178fdf998ef78c3dfd382bfc1a543f7f9a75edd7273b0874d
+  leaf_4 : 9b99e6fe1529dc917f7f7a52599c36afdb00f076b28f61a7e78637a0f03164ee
+
+round_root_R1 : c9cbd34046a95aa2e52361068f471fc0d87022d6c2a9ca1912dd1e74cee4f97b
+round_root_R2 : 53891643beebf1eba5961ab5413f60542776d352666502b1e69c6c86471f40c7
+match_root    : dd6ec0cb84e5f2b96630e972c1b8e523d3faea324b2194f20fcf578ea6c77d54
+```
+
+### 5.4 What this demonstrates
+- Every notation token (`Nto`, `Nis`, `Nosm`, `Go:ksg`) resolves to a verbatim
+  Section-1 entry (Tai-otoshi, Ippon-seoinage, O-soto-makikomi, Kami-shiho-gatame).
+- Any tampering with any field of any line changes a leaf, which changes a
+  round_root, which changes the match_root — split-tally grain behaviour.
+- `match_root dd6ec0cb…7d54` is the single value an anchoring transaction
+  commits to. Raw lines stay off-chain.
+
+### 5.5 Still deferred (requires source I don't have)
+- Full technique list beyond the `etc.` markers.
+- Closing the truncation at `kansetsu_waza`.
+- `threshold(target_rank)` and `required_kata(target_rank)` values grounded
+  in Kodokan promotion standards.
+Any of these needs the remainder of the menu source — not willing to fabricate.
+
 
