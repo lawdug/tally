@@ -52,26 +52,60 @@ residency/
 │   ├── index.ts
 │   └── cli.ts                  canon-root | validate | ref | merkle-root |
 │                               core-root
-└── tests/                      node:test suites (46 tests at v0.1)
+├── finance/                    Finance Pillar v0.1
+│   ├── canon.json              instrument_types, fund_sources,
+│   │                           currency_rails, flow_directions,
+│   │                           attestation_types, notes
+│   ├── loader.ts               FinanceCanon + FinanceCanonLoader
+│   ├── validate.ts
+│   ├── index.ts
+│   └── cli.ts
+├── insurance/                  Insurance Pillar v0.1
+│   ├── canon.json              policy_types, coverage_scopes,
+│   │                           claim_categories, term_lengths,
+│   │                           attestation_types, notes
+│   ├── loader.ts               InsuranceCanon + InsuranceCanonLoader
+│   ├── validate.ts
+│   ├── index.ts
+│   └── cli.ts
+└── tests/                      node:test suites (58 tests at v0.1)
     ├── canonicalize.test.ts
     ├── merkle.test.ts
     ├── validation.test.ts
-    ├── loaders.test.ts
-    └── integration.test.ts
+    ├── loaders.test.ts         core + property
+    ├── finance.test.ts
+    ├── insurance.test.ts
+    └── integration.test.ts     cross-pillar digest / anchor sanity
 ```
 
-## How Property Builds on Core
+## Pillars at a glance
 
-- Both pillars import canonicalization, hashing, and Merkle primitives from
-  `residency/shared`. They do not re-implement them. Any pillar that
-  duplicates the primitives risks producing incompatible digests.
-- Both pillars emit a `canon_root` via the *same* `BaseCanonLoader.canonRoot`
-  method, so a third party can compare roots with the same verifier.
-- Property extends Core's `attestation_types` with housing-specific types
-  (`cultural_fit_cert`, `rental_bond`) without redefining the core set.
+| Pillar    | Canon name            | v0.1 domains                                                            |
+|-----------|-----------------------|-------------------------------------------------------------------------|
+| Core      | `residency.core`      | residency types, status lifecycle, rights categories, attestation types |
+| Property  | `residency.property`  | housing types, tenancy, cultural-fit tags, lease durations              |
+| Finance   | `residency.finance`   | grants, remittances, tuition support, banking, escrow, reimbursements   |
+| Insurance | `residency.insurance` | health, liability, property, travel, long-term residency, family        |
 
-Future pillars (Finance, Insurance, Arts Incubator, Rights Portfolio) plug in
-the same way — see [Adding a New Pillar](#adding-a-new-pillar).
+Every pillar's canon is clearly labelled as **v0.1 starter — authoritative
+sources pending** via its `notes` block. None of the canons encode legal,
+financial, or policy rules; they are pure descriptive vocabulary. Binding
+terms live in referenced documents, not here.
+
+## How Pillars Build on Core
+
+- Every pillar imports canonicalization, hashing, and Merkle primitives from
+  `residency/shared`. None of them re-implement these. A pillar that
+  duplicated the primitives would risk producing incompatible digests.
+- Every pillar emits `canon_root` via the *same* `BaseCanonLoader.canonRoot`
+  method, so a third party can compare roots with a single verifier.
+- Pillars extend Core's `attestation_types` with domain-specific types
+  (Property: `cultural_fit_cert`, `rental_bond`; Finance: `grant_award`,
+  `escrow_release`; Insurance: `policy_issuance`, `claim_settlement`, …)
+  without redefining the Core set.
+
+Future pillars (Arts Incubator, Rights Portfolio, …) plug in the same way —
+see [Adding a New Pillar](#adding-a-new-pillar).
 
 ## Install & Test
 
@@ -111,20 +145,34 @@ residency-core — canon tooling for residency.core
 ...
 ```
 
-### Property
+### Property / Finance / Insurance
+
+Every pillar shares the same interface. Substitute the pillar name in the
+path:
 
 ```bash
 $ npx ts-node property/cli.ts canon-root
 6a7ea66f7a1d0066f0d4fa2285b1a2ae2801f9de93a290401438399afd4d91d9
 
-$ npx ts-node property/cli.ts validate
-valid
+$ npx ts-node finance/cli.ts canon-root
+085d516edfbd38823b29c90afbebf66e13c2d812cc9f3b758e3cfd3f4710f6ce
 
-$ npx ts-node property/cli.ts ref --json
-{"name":"residency.property","version":"0.1","canon_root":"6a7ea66f..."}
+$ npx ts-node insurance/cli.ts canon-root
+5cda760f0a0f87a73b0fcde189f55bcb4073345a698bd24cd14f4895c80a456c
 
-# Pillar-specific: print canon_root of the Core canon this pillar targets
-$ npx ts-node property/cli.ts core-root
+$ npx ts-node finance/cli.ts validate --json
+{"ok":true,"valid":true}
+
+$ npx ts-node insurance/cli.ts ref
+{
+  "name": "residency.insurance",
+  "version": "0.1",
+  "canon_root": "5cda760f0a0f87a73b0fcde189f55bcb4073345a698bd24cd14f4895c80a456c"
+}
+
+# Every pillar exposes `core-root` — the canon_root of the Core canon
+# it is pinned against (useful for attestation envelopes)
+$ npx ts-node finance/cli.ts core-root
 5a317642b6a8135fc47fc8f20c571f22a32d55d9f41d5ada80b14e839521e2d7
 
 # Merkle root over a list of leaves
@@ -135,19 +183,15 @@ $ cat > /tmp/claims.json <<'JSON'
 ]
 JSON
 $ npx ts-node property/cli.ts merkle-root /tmp/claims.json
-3f6c6a...
 ```
 
 ### npm script equivalents
 
 ```bash
-npm run core:canon-root
-npm run core:validate
-npm run core:ref
-npm run property:canon-root
-npm run property:validate
-npm run property:ref
-npm run property:core-root
+npm run core:canon-root       npm run core:validate       npm run core:ref
+npm run property:canon-root   npm run property:validate   npm run property:ref   npm run property:core-root
+npm run finance:canon-root    npm run finance:validate    npm run finance:ref    npm run finance:core-root
+npm run insurance:canon-root  npm run insurance:validate  npm run insurance:ref  npm run insurance:core-root
 ```
 
 ### Exit codes
@@ -163,24 +207,38 @@ npm run property:core-root
 ```ts
 import { coreLoader } from "./core";
 import { propertyLoader } from "./property";
+import { financeLoader } from "./finance";
+import { insuranceLoader } from "./insurance";
 import { merkleRoot, hashLeaf } from "./shared";
 
-const core = coreLoader.loadValidated();     // throws on invalid shape
-const prop = propertyLoader.loadValidated();
+// Throws on invalid shape. Validation errors are aggregated per pillar.
+const core      = coreLoader.loadValidated();
+const property  = propertyLoader.loadValidated();
+const finance   = financeLoader.loadValidated();
+const insurance = insuranceLoader.loadValidated();
 
-const coreRef = coreLoader.ref(core);        // { name, version, canon_root }
-const propRef = propertyLoader.ref(prop);
+// A CanonRef is { name, version, canon_root } — the public handle used in
+// attestation envelopes.
+const canons = [
+  coreLoader.ref(core),
+  propertyLoader.ref(property),
+  financeLoader.ref(finance),
+  insuranceLoader.ref(insurance),
+];
 
-// Anchor a batch of claims whose vocabulary is pinned to the canons above
+// Anchor a batch of claims whose vocabulary is pinned to the canons above.
+// Leaf order is significant — preserve it in the public record.
 const claims = [
   { claim_id: "A-1", status: "submitted" },
   { claim_id: "A-2", status: "approved" },
 ];
+
 const anchor = {
-  canons: [coreRef, propRef],
+  canons,
   claims_root: merkleRoot(claims),
 };
-const anchor_root = hashLeaf(anchor);        // the 32-byte hash you'd publish
+
+const anchor_root = hashLeaf(anchor); // the 32-byte hash you'd publish
 ```
 
 ## Canon Root Semantics
@@ -206,97 +264,169 @@ significant** — preserve it in any public record. The empty tree hashes to
 
 ## Adding a New Pillar
 
-The shared layer makes new pillars small — typically four files.
+The shared layer makes new pillars small. A full pillar is typically **five
+source files** (plus one test file). Use the existing `property/`,
+`finance/`, or `insurance/` directories as a reference — they all follow
+this exact template.
 
-1. **Create the directory** alongside `property/`, e.g.
-   `residency/finance/`.
+### 1. Create the directory
 
-2. **Write `canon.json`**. Start from the Core `version` / `issued_at`
-   discipline; add your domain fields. Mark unfinished vocabulary as
-   starter content via a `notes` block:
+```
+residency/<pillar>/
+  canon.json
+  loader.ts
+  validate.ts
+  index.ts
+  cli.ts
+```
 
-   ```json
-   {
-     "version": "0.1",
-     "issued_at": 1744896000,
-     "notes": {
-       "status": "starter set — authoritative data pending",
-       "summary": "Finance Pillar v0.1 starter vocabulary.",
-       "upstream": "ram.school"
-     },
-     "instrument_types": ["tally_bond", "escrow"],
-     "attestation_types": {
-       "bond_issuance": "verifies bond issuance + reserves"
-     }
-   }
-   ```
+### 2. Author `canon.json`
 
-3. **Write `loader.ts`**. Extend `BaseCanonLoader<T>`:
+Include `version`, `issued_at`, your domain arrays, and an `attestation_types`
+map. Mark unfinished vocabulary with a `notes` block so downstream
+consumers can distinguish a placeholder from authoritative content:
 
-   ```ts
-   import { join } from "path";
-   import {
-     BaseCanonLoader,
-     fromErrors,
-     isNonEmptyStringArray,
-     isPlainObject,
-     validateCanonMeta,
-     validateStringMap,
-   } from "../shared";
-   import type { Canon, ValidationResult } from "../shared";
+```json
+{
+  "version": "0.1",
+  "issued_at": 1744896000,
+  "notes": {
+    "status": "v0.1 starter — authoritative sources pending",
+    "summary": "<Pillar> Pillar v0.1 starter vocabulary.",
+    "upstream": "ram.school"
+  },
+  "<domain_array_1>": ["..."],
+  "<domain_array_2>": ["..."],
+  "attestation_types": {
+    "<type>": "<what this attestation verifies>"
+  }
+}
+```
 
-   export interface FinanceCanon extends Canon {
-     instrument_types: string[];
-     attestation_types: Record<string, string>;
-   }
+Keep the canon purely descriptive. Rates, eligibility, rules, and other
+binding terms belong to policy documents referenced by attestation
+payloads, **not** to the canon vocabulary.
 
-   export class FinanceCanonLoader extends BaseCanonLoader<FinanceCanon> {
-     readonly name = "residency.finance";
-     readonly defaultPath = join(__dirname, "canon.json");
+### 3. `loader.ts` — extend `BaseCanonLoader<T>`
 
-     validate(input: unknown): ValidationResult {
-       const errors = validateCanonMeta(input);
-       if (!isPlainObject(input)) return fromErrors(errors);
-       const c = input as Partial<FinanceCanon>;
-       if (!isNonEmptyStringArray(c.instrument_types)) {
-         errors.push("instrument_types must be a non-empty array of strings");
-       }
-       errors.push(...validateStringMap(c.attestation_types, "attestation_types"));
-       return fromErrors(errors);
-     }
-   }
+```ts
+import { join } from "path";
+import {
+  BaseCanonLoader,
+  fromErrors,
+  isNonEmptyStringArray,
+  isPlainObject,
+  validateCanonMeta,
+  validateStringMap,
+} from "../shared";
+import type { Canon, ValidationResult } from "../shared";
 
-   export const financeLoader = new FinanceCanonLoader();
-   ```
+export interface ArtsCanon extends Canon {
+  medium_types: string[];
+  program_formats: string[];
+  attestation_types: Record<string, string>;
+  notes?: { status: string; summary?: string; upstream?: string };
+}
 
-4. **Write `cli.ts`**. A three-line shim is usually enough:
+const REQUIRED_ARRAY_KEYS: Array<keyof ArtsCanon> = [
+  "medium_types",
+  "program_formats",
+];
 
-   ```ts
-   #!/usr/bin/env ts-node
-   import { runCli } from "../shared";
-   import { financeLoader } from "./loader";
+export class ArtsCanonLoader extends BaseCanonLoader<ArtsCanon> {
+  readonly name = "residency.arts";
+  readonly defaultPath = join(__dirname, "canon.json");
 
-   process.exit(runCli({ binName: "residency-finance", loader: financeLoader },
-                       process.argv.slice(2)));
-   ```
+  validate(input: unknown): ValidationResult {
+    const errors = validateCanonMeta(input);
+    if (!isPlainObject(input)) return fromErrors(errors);
+    const c = input as Partial<ArtsCanon>;
+    for (const key of REQUIRED_ARRAY_KEYS) {
+      if (!isNonEmptyStringArray(c[key])) {
+        errors.push(`${key} must be a non-empty array of strings`);
+      }
+    }
+    errors.push(...validateStringMap(c.attestation_types, "attestation_types"));
+    return fromErrors(errors);
+  }
+}
 
-5. **Register the pillar** by adding scripts to `package.json`:
+export const artsLoader = new ArtsCanonLoader();
+```
 
-   ```json
-   "finance:canon-root": "ts-node finance/cli.ts canon-root",
-   "finance:validate":   "ts-node finance/cli.ts validate"
-   ```
+### 4. `validate.ts` and `index.ts` (thin)
 
-   Add `finance/**/*` to `tsconfig.json`'s `include`.
+```ts
+// validate.ts
+import type { ValidationResult } from "../shared";
+import { artsLoader } from "./loader";
+export function validateArtsCanon(input: unknown): ValidationResult {
+  return artsLoader.validate(input);
+}
 
-6. **Write tests** under `tests/`. At minimum a loader test and an entry in
-   `integration.test.ts` verifying your pillar's `canonRoot` matches the
-   shared `canonRoot`.
+// index.ts
+export { artsLoader, ArtsCanonLoader } from "./loader";
+export type { ArtsCanon } from "./loader";
+export { validateArtsCanon } from "./validate";
+```
 
-You inherit `load`, `loadValidated`, `canonRoot`, `ref`, the standard CLI
-verbs (`canon-root | validate | ref | merkle-root | help`), `--json` and
-`--help` support, and the shared exit-code convention. Add pillar-specific
-verbs via `extraCommands` (see `property/cli.ts` for the `core-root` example).
+### 5. `cli.ts` — runCli shim
+
+```ts
+#!/usr/bin/env ts-node
+import { runCli, emit, ExitCodes } from "../shared";
+import { coreLoader } from "../core";
+import { artsLoader } from "./loader";
+
+process.exit(
+  runCli(
+    {
+      binName: "residency-arts",
+      loader: artsLoader,
+      extraCommands: {
+        "core-root": {
+          description: "print canon_root of the Core canon this pillar builds on",
+          handler: (_pos, flags) => {
+            const root = coreLoader.canonRoot(coreLoader.load());
+            const jsonMode = flags["json"] === true;
+            emit(jsonMode ? { core_canon_root: root } : root, jsonMode);
+            return ExitCodes.OK;
+          },
+        },
+      },
+    },
+    process.argv.slice(2)
+  )
+);
+```
+
+### 6. Wire it in
+
+- **`tsconfig.json`** — add `"arts/**/*"` to `include`.
+- **`package.json`** — add scripts:
+  ```json
+  "arts:canon-root": "ts-node arts/cli.ts canon-root",
+  "arts:validate":   "ts-node arts/cli.ts validate",
+  "arts:ref":        "ts-node arts/cli.ts ref",
+  "arts:core-root":  "ts-node arts/cli.ts core-root"
+  ```
+
+### 7. Tests
+
+Add `tests/arts.test.ts` mirroring `tests/finance.test.ts`. Register it in
+the `test` script in `package.json`, and extend `tests/integration.test.ts`
+to include the new pillar in the "all pillar canon_roots are distinct" and
+"multi-pillar anchor" checks.
+
+### What you inherit automatically
+
+- `load`, `loadValidated`, `canonRoot`, `ref` from `BaseCanonLoader`
+- Standard CLI verbs: `canon-root | validate | ref | merkle-root | help`
+- `--json` output mode and `-h` / `--help` flags (anywhere on the command line)
+- Shared exit codes (`0` / `1` / `2`)
+
+Add pillar-specific verbs via `extraCommands` — see any of `property/cli.ts`,
+`finance/cli.ts`, or `insurance/cli.ts` for the `core-root` example.
 
 ## Versioning
 
@@ -316,6 +446,7 @@ semantic change.
 
 ## Status
 
-v0.1 — Section 1 scaffold. Canon + root computation for Core and Property.
-Validated by 46 automated tests. Ready to accept Finance, Insurance, Arts
-Incubator, and Rights Portfolio pillars against the same shared primitives.
+v0.1 — Section 1 scaffold. Canon + root computation for Core, Property,
+Finance, and Insurance. Validated by 58 automated tests. Arts Incubator
+and Rights Portfolio pillars plug into the same shared primitives; see
+[Adding a New Pillar](#adding-a-new-pillar).
