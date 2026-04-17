@@ -24,15 +24,50 @@ tally:
 Verification = the two halves hash to the same digest. Forgery requires
 breaking SHA-256.
 
+## Overview
+
+```
+                 ┌─────────────────────────────────────────────┐
+                 │  residency/cli.ts  (top-level dispatcher)   │
+                 │    list · anchor · <pillar> <command>       │
+                 └───────────────────┬─────────────────────────┘
+                                     │
+        ┌─────────────┬──────────────┼──────────────┬─────────────┐
+        ▼             ▼              ▼              ▼             ▼
+   ┌────────┐   ┌──────────┐   ┌──────────┐   ┌───────────┐
+   │  core  │   │ property │   │ finance  │   │ insurance │    (+ future
+   │        │   │          │   │          │   │           │    pillars …)
+   │ canon  │   │  canon   │   │  canon   │   │   canon   │
+   │ loader │   │  loader  │   │  loader  │   │  loader   │
+   │  CLI   │   │   CLI    │   │   CLI    │   │    CLI    │
+   └───┬────┘   └────┬─────┘   └────┬─────┘   └─────┬─────┘
+       └────────┬────┴────────┬─────┴────────┬──────┘
+                ▼             ▼              ▼
+            ┌─────────────────────────────────────────┐
+            │             residency/shared/            │
+            │  canonicalize · merkle · BaseCanonLoader │
+            │  validation · types · runCli · emit      │
+            └─────────────────────────────────────────┘
+```
+
+Every pillar is a thin adapter on top of `shared/`: a typed canon, a
+loader that extends `BaseCanonLoader`, a validator, and a CLI shim.
+Non-core pillars also expose a `core-root` verb that prints the Core
+canon_root they are pinned against.
+
 ## Layout
 
 ```
 residency/
+├── cli.ts                      Top-level dispatcher (list / anchor /
+│                               <pillar> <command>)
 ├── shared/                     Cross-cutting primitives for every pillar
-│   ├── types.ts                Canon, ValidationResult, MerkleProof, CanonRef
+│   ├── types.ts                Canon, StarterNotes, ValidationResult,
+│   │                           MerkleProof, CanonRef
 │   ├── canonicalize.ts         Deterministic JSON (JCS subset)
 │   ├── merkle.ts               sha256Hex, hashLeaf, merkleRoot, canonRoot
-│   ├── validation.ts           Type guards + shared validators
+│   ├── validation.ts           Type guards + validateCanonMeta +
+│   │                           validateStringMap + validateStarterNotes
 │   ├── base-loader.ts          BaseCanonLoader<T> (load, canonRoot, ref, ...)
 │   ├── cli.ts                  runCli dispatcher + emit/emitError + ExitCodes
 │   └── index.ts                Public surface
@@ -40,6 +75,7 @@ residency/
 │   ├── canon.json              residency_types, status, rights_categories,
 │   │                           attestation_types
 │   ├── loader.ts               CoreCanon + CoreCanonLoader + coreLoader
+│   ├── cli-helpers.ts          coreRootExtraCommand (reused by pillars)
 │   ├── validate.ts             validateCoreCanon (thin wrapper)
 │   ├── index.ts
 │   └── cli.ts                  canon-root | validate | ref | merkle-root
@@ -118,8 +154,47 @@ npm test
 
 ## CLI — Usage Examples
 
-Every pillar exposes the same standard verbs. Flags may appear anywhere on
-the command line (`--json` and `-h` / `--help` are always accepted).
+Two entry points are available:
+
+- **Top-level dispatcher** — `residency/cli.ts`. Good for scripts that
+  touch multiple pillars or need the cross-pillar `anchor` / `list`
+  verbs.
+- **Per-pillar CLIs** — `residency/<pillar>/cli.ts`. Identical command
+  surface as going through the dispatcher.
+
+Flags may appear anywhere on the command line (`--json` and `-h` /
+`--help` are always accepted).
+
+### Top-level (cross-pillar)
+
+```bash
+$ npx ts-node cli.ts list
+core        residency.core          5a317642b6a8135fc47fc8f20c571f22a32d55d9f41d5ada80b14e839521e2d7
+property    residency.property      6a7ea66f7a1d0066f0d4fa2285b1a2ae2801f9de93a290401438399afd4d91d9
+finance     residency.finance       085d516edfbd38823b29c90afbebf66e13c2d812cc9f3b758e3cfd3f4710f6ce
+insurance   residency.insurance     5cda760f0a0f87a73b0fcde189f55bcb4073345a698bd24cd14f4895c80a456c
+
+$ npx ts-node cli.ts anchor
+residency.core          0.1   5a317642...
+residency.property      0.1   6a7ea66f...
+residency.finance       0.1   085d516e...
+residency.insurance     0.1   5cda760f...
+anchor_root                   bb1c154b486b49c3b0fd9c6391a1bff90f1ddd74d3efb727d9d3d3397c7fea3b
+
+$ npx ts-node cli.ts anchor --json
+{"canons":[...],"anchor_root":"bb1c154b..."}
+
+# Dispatch through the top-level CLI to a specific pillar
+$ npx ts-node cli.ts property canon-root
+$ npx ts-node cli.ts finance  validate --json
+$ npx ts-node cli.ts insurance core-root
+```
+
+`anchor` Merkle-roots the pillar `CanonRef` array in registry order
+(`core, property, finance, insurance`) — stable across runs so
+third-party verifiers can recompute it. Reordering pillars in the
+registry would shift the `anchor_root`, so registry order is part of
+the contract.
 
 ### Core
 
@@ -309,6 +384,9 @@ payloads, **not** to the canon vocabulary.
 
 ### 3. `loader.ts` — extend `BaseCanonLoader<T>`
 
+Reuse the shared `StarterNotes` type and `validateStarterNotes` helper —
+the "notes" block shape is identical across every pillar.
+
 ```ts
 import { join } from "path";
 import {
@@ -318,14 +396,15 @@ import {
   isPlainObject,
   validateCanonMeta,
   validateStringMap,
+  validateStarterNotes,
 } from "../shared";
-import type { Canon, ValidationResult } from "../shared";
+import type { Canon, StarterNotes, ValidationResult } from "../shared";
 
 export interface ArtsCanon extends Canon {
   medium_types: string[];
   program_formats: string[];
   attestation_types: Record<string, string>;
-  notes?: { status: string; summary?: string; upstream?: string };
+  notes?: StarterNotes;
 }
 
 const REQUIRED_ARRAY_KEYS: Array<keyof ArtsCanon> = [
@@ -347,6 +426,7 @@ export class ArtsCanonLoader extends BaseCanonLoader<ArtsCanon> {
       }
     }
     errors.push(...validateStringMap(c.attestation_types, "attestation_types"));
+    errors.push(...validateStarterNotes(c.notes));
     return fromErrors(errors);
   }
 }
@@ -372,10 +452,14 @@ export { validateArtsCanon } from "./validate";
 
 ### 5. `cli.ts` — runCli shim
 
+Use the shared `coreRootExtraCommand()` factory. Every non-core pillar
+gets the same `core-root` verb this way, so you don't hand-roll a
+handler.
+
 ```ts
 #!/usr/bin/env ts-node
-import { runCli, emit, ExitCodes } from "../shared";
-import { coreLoader } from "../core";
+import { runCli } from "../shared";
+import { coreRootExtraCommand } from "../core";
 import { artsLoader } from "./loader";
 
 process.exit(
@@ -383,17 +467,7 @@ process.exit(
     {
       binName: "residency-arts",
       loader: artsLoader,
-      extraCommands: {
-        "core-root": {
-          description: "print canon_root of the Core canon this pillar builds on",
-          handler: (_pos, flags) => {
-            const root = coreLoader.canonRoot(coreLoader.load());
-            const jsonMode = flags["json"] === true;
-            emit(jsonMode ? { core_canon_root: root } : root, jsonMode);
-            return ExitCodes.OK;
-          },
-        },
-      },
+      extraCommands: { "core-root": coreRootExtraCommand() },
     },
     process.argv.slice(2)
   )
@@ -410,6 +484,12 @@ process.exit(
   "arts:ref":        "ts-node arts/cli.ts ref",
   "arts:core-root":  "ts-node arts/cli.ts core-root"
   ```
+- **`residency/cli.ts`** — register the pillar in the `REGISTRY`:
+  ```ts
+  ["arts", { loader: artsLoader as BaseCanonLoader<Canon>, pinsCore: true }],
+  ```
+  Append at the end — registry order is part of the anchor contract;
+  inserting mid-list would shift every downstream `anchor_root`.
 
 ### 7. Tests
 
