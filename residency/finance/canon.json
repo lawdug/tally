@@ -1,0 +1,47 @@
+{
+  "version": "0.1",
+  "issued_at": 1744896000,
+  "notes": {
+    "status": "v0.1 starter — authoritative sources pending",
+    "summary": "Placeholder vocabulary for Finance Pillar v0.1. Instrument, source, and rail tags are illustrative. Real deployments must substitute jurisdiction-specific terms and provider references (banks, payment rails, grant bodies) before any canon_root is anchored for public use. Nothing here constitutes a financial rule, rate, eligibility criterion, or binding obligation.",
+    "upstream": "ram.school"
+  },
+  "instrument_types": [
+    "remittance",
+    "cultural_study_grant",
+    "tuition_support",
+    "bank_access",
+    "escrow",
+    "cultural_bond",
+    "stipend",
+    "reimbursement"
+  ],
+  "fund_sources": [
+    "personal",
+    "family_sponsor",
+    "institutional_grant",
+    "foundation",
+    "crowdfund",
+    "employer",
+    "alumni_fund"
+  ],
+  "currency_rails": [
+    "jpy_domestic",
+    "cross_border_wire",
+    "cross_border_retail",
+    "crypto_anchored"
+  ],
+  "flow_directions": [
+    "inbound",
+    "outbound",
+    "internal_transfer"
+  ],
+  "attestation_types": {
+    "grant_award": "records award of a cultural-study grant or stipend",
+    "remittance_receipt": "records receipt of a remittance",
+    "tuition_payment": "records a tuition or program payment",
+    "banking_access": "confirms a resident holds a usable banking rail",
+    "escrow_release": "records release of funds from escrow on condition",
+    "reimbursement": "records reimbursement of an approved expense"
+  }
+}

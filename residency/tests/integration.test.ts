@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { coreLoader } from "../core";
 import { propertyLoader } from "../property";
+import { financeLoader } from "../finance";
 import { canonRoot, merkleRoot, hashLeaf } from "../shared";
 
 /**
@@ -61,5 +62,23 @@ describe("core + property integration", () => {
     ];
     const root = merkleRoot(refs);
     assert.match(root, /^[0-9a-f]{64}$/);
+  });
+
+  it("all pillar canon_roots are distinct", () => {
+    const roots = new Set([
+      coreLoader.canonRoot(coreLoader.load()),
+      propertyLoader.canonRoot(propertyLoader.load()),
+      financeLoader.canonRoot(financeLoader.load()),
+    ]);
+    assert.equal(roots.size, 3);
+  });
+
+  it("a multi-pillar anchor (core + property + finance) Merkle-roots cleanly", () => {
+    const refs = [
+      coreLoader.ref(coreLoader.load()),
+      propertyLoader.ref(propertyLoader.load()),
+      financeLoader.ref(financeLoader.load()),
+    ];
+    assert.match(merkleRoot(refs), /^[0-9a-f]{64}$/);
   });
 });

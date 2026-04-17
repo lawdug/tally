@@ -15,6 +15,6 @@
     "sourceMap": true,
     "outDir": "dist"
   },
-  "include": ["shared/**/*", "core/**/*", "property/**/*"],
+  "include": ["shared/**/*", "core/**/*", "property/**/*", "finance/**/*", "insurance/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist"]
 }
