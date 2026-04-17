@@ -1,0 +1,15 @@
+{
+  "version": "0.1",
+  "issued_at": 1744896000,
+  "entities": {
+    "residency_types": ["cultural_study", "arts_immersion", "language_program", "family_residency"],
+    "status": ["pending", "active", "completed", "revoked"],
+    "rights_categories": ["housing", "visa", "financial", "educational", "cultural_credits"]
+  },
+  "attestation_types": {
+    "housing_lease": "verifies rental agreement + cultural fit",
+    "study_completion": "verifies arts/language program completion",
+    "insurance_bond": "verifies financial guarantee",
+    "residency_proof": "verifies overall status"
+  }
+}

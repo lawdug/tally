@@ -1,0 +1,19 @@
+{
+  "name": "@ram-school/residency",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Japan Cultural Residency — Core + Property Pillar (v0.1)",
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "tsc",
+    "core:canon-root": "ts-node core/cli.ts canon-root",
+    "core:validate": "ts-node core/cli.ts validate",
+    "property:canon-root": "ts-node property/cli.ts canon-root",
+    "property:validate": "ts-node property/cli.ts validate"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
