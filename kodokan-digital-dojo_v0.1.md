@@ -1,11 +1,38 @@
 # Kodokan Digital Dojo — v0.1
 
 Martial-arts fraternal twin to Metalaw. Two-layer discipline:
-**symbol layer** (compact notation) + **discourse layer** (full technique / command / philosophy names).
-On-chain anchoring readiness. Granule-level precision.
+**symbol layer** (compact notation) + **discourse layer** (full technique /
+command / philosophy names). On-chain anchoring readiness. Granule-level
+precision.
 
 Source of truth for this track: `kodokan-judo-scorekeeper-menu.md`
-(Historical Kodokan chart, Meiji/Taisho era, hard copy from Kodokan Tokyo.)
+(Historical Kodokan chart, Meiji/Taisho era, hard copy from Kodokan
+Tokyo). Metalaw v0.2 is locked and untouched; see §3.5.
+
+Companion: `verify.py` in the repo root reproduces the Section 5
+test vector and runs the tamper demo. `python3 verify.py` exits 0
+on success, 1 on mismatch.
+
+## Contents
+- §1 — Structured Extraction (JSON)
+- §2 — Compact Notation System (symbol layer)
+- §3 — Integration Outline: On-Chain Rank Verification & Residency
+  - §3.1 Three linked registries
+  - §3.2 On-chain rank verification (the half-tally)
+  - §3.3 Referee / scorekeeper role
+  - §3.4 Residency program integration
+  - §3.5 Boundary against Metalaw
+  - §3.6 v0.1 → v0.2 roadmap (historical snapshot)
+- §4 — Sensei Attestation Signature Format
+- §5 — End-to-End Shiai Test Vector
+  - §5.1 Match script, §5.2 Encoding spec, §5.3 Computed vector
+  - §5.4 Verification walkthrough, §5.5 Tamper demo
+  - §5.6 Demonstrations, §5.7 Deferred pointer
+- §6 — Current State + Placeholder Scaffolding
+  - §6.1 What is solid
+  - §6.2 Core Verifiable Subset (additive placeholder)
+  - §6.3 Extensible Promotion Predicate
+- §7 — Next Concrete Steps to Unblock Full v0.1
 
 ---
 
