@@ -6,8 +6,9 @@ import {
   isPlainObject,
   validateCanonMeta,
   validateStringMap,
+  validateStarterNotes,
 } from "../shared";
-import type { Canon, ValidationResult } from "../shared";
+import type { Canon, StarterNotes, ValidationResult } from "../shared";
 
 /**
  * Finance Pillar canon shape (v0.1).
@@ -28,11 +29,7 @@ export interface FinanceCanon extends Canon {
   currency_rails: string[];
   flow_directions: string[];
   attestation_types: Record<string, string>;
-  notes?: {
-    status: string;
-    summary?: string;
-    upstream?: string;
-  };
+  notes?: StarterNotes;
 }
 
 export const DEFAULT_FINANCE_CANON_PATH = join(__dirname, "canon.json");
@@ -62,17 +59,7 @@ export class FinanceCanonLoader extends BaseCanonLoader<FinanceCanon> {
     }
 
     errors.push(...validateStringMap(c.attestation_types, "attestation_types"));
-
-    if (c.notes !== undefined) {
-      if (!isPlainObject(c.notes)) {
-        errors.push("notes must be an object when present");
-      } else if (
-        typeof c.notes.status !== "string" ||
-        c.notes.status.length === 0
-      ) {
-        errors.push("notes.status must be a non-empty string");
-      }
-    }
+    errors.push(...validateStarterNotes(c.notes));
 
     return fromErrors(errors);
   }

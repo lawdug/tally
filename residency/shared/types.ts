@@ -8,6 +8,20 @@
  */
 
 /**
+ * Provenance block used on starter canons so downstream consumers can
+ * distinguish a placeholder vocabulary from an authoritative document.
+ * Carried as an optional `notes` field on pillar canons.
+ */
+export interface StarterNotes {
+  /** Short human-readable status, e.g. "v0.1 starter — authoritative sources pending". */
+  status: string;
+  /** Optional one-line description of what the canon covers. */
+  summary?: string;
+  /** Optional upstream / steward reference, e.g. "ram.school". */
+  upstream?: string;
+}
+
+/**
  * Every canon document — core or pillar — carries at least a schema version
  * and an issuance timestamp. Pillar canons extend this with their own fields.
  */

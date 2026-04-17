@@ -2,7 +2,13 @@
 // Every pillar imports from here; nothing in a pillar should reach into
 // shared/* by sub-path.
 
-export type { Canon, ValidationResult, MerkleProof, CanonRef } from "./types";
+export type {
+  Canon,
+  StarterNotes,
+  ValidationResult,
+  MerkleProof,
+  CanonRef,
+} from "./types";
 export { canonicalize } from "./canonicalize";
 export { sha256Hex, hashLeaf, merkleRoot, canonRoot } from "./merkle";
 export {
@@ -12,6 +18,7 @@ export {
   isPlainObject,
   validateCanonMeta,
   validateStringMap,
+  validateStarterNotes,
   ok,
   fromErrors,
 } from "./validation";

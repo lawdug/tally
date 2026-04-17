@@ -12,6 +12,7 @@ export {
 } from "./loader";
 export type { CoreCanon } from "./loader";
 export { validateCoreCanon } from "./validate";
+export { coreRootExtraCommand } from "./cli-helpers";
 
 // Re-export the shared primitives through core for convenience so
 // single-pillar consumers can depend on `residency/core` alone.

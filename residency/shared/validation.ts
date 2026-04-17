@@ -67,6 +67,29 @@ export function validateStringMap(
   return errors;
 }
 
+/**
+ * Validates an optional `notes` starter-provenance block. Pillar canons
+ * carry this as `notes?: StarterNotes`. If absent the check is a no-op.
+ * If present the shape is validated.
+ */
+export function validateStarterNotes(value: unknown): string[] {
+  if (value === undefined) return [];
+  if (!isPlainObject(value)) {
+    return ["notes must be an object when present"];
+  }
+  const errors: string[] = [];
+  if (!isNonEmptyString(value.status)) {
+    errors.push("notes.status must be a non-empty string");
+  }
+  if (value.summary !== undefined && !isNonEmptyString(value.summary)) {
+    errors.push("notes.summary must be a non-empty string when present");
+  }
+  if (value.upstream !== undefined && !isNonEmptyString(value.upstream)) {
+    errors.push("notes.upstream must be a non-empty string when present");
+  }
+  return errors;
+}
+
 export function ok(): ValidationResult {
   return { valid: true, errors: [] };
 }

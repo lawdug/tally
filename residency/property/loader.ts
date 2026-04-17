@@ -6,13 +6,14 @@ import {
   isPlainObject,
   validateCanonMeta,
   validateStringMap,
+  validateStarterNotes,
 } from "../shared";
-import type { Canon, ValidationResult } from "../shared";
+import type { Canon, StarterNotes, ValidationResult } from "../shared";
 
 /**
  * Property Pillar canon shape (v0.1) — Cultural Housing & Long-Term Residency.
  *
- * `notes` is an optional provenance block. Present on starter canons so
+ * `notes` is a StarterNotes provenance block. Present on starter canons so
  * downstream consumers can distinguish a placeholder from an authoritative
  * document without having to parse the version string.
  */
@@ -22,11 +23,7 @@ export interface PropertyCanon extends Canon {
   cultural_fit_tags: string[];
   lease_durations: string[];
   attestation_types: Record<string, string>;
-  notes?: {
-    status: string;
-    summary?: string;
-    upstream?: string;
-  };
+  notes?: StarterNotes;
 }
 
 export const DEFAULT_PROPERTY_CANON_PATH = join(__dirname, "canon.json");
@@ -56,17 +53,7 @@ export class PropertyCanonLoader extends BaseCanonLoader<PropertyCanon> {
     }
 
     errors.push(...validateStringMap(c.attestation_types, "attestation_types"));
-
-    if (c.notes !== undefined) {
-      if (!isPlainObject(c.notes)) {
-        errors.push("notes must be an object when present");
-      } else if (
-        typeof c.notes.status !== "string" ||
-        c.notes.status.length === 0
-      ) {
-        errors.push("notes.status must be a non-empty string");
-      }
-    }
+    errors.push(...validateStarterNotes(c.notes));
 
     return fromErrors(errors);
   }
