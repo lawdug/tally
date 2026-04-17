@@ -416,20 +416,23 @@ Kodokan / USJF promotion standards.
 
 ---
 
-## Section 6 — Current State + Minimal Placeholder Scaffolding
+## Section 6 — Placeholder Scaffolding + Status Dashboard
 
-### 6.1 What is solid (no fabrication)
-- **Section 1** — Verbatim JSON extraction from the source menu; truncation
-  at `kansetsu_waza` flagged; `etc.` markers preserved.
-- **Section 2** — Compact notation (category prefixes, technique codes,
-  outcome glyphs, line grammar, merkle anchoring shape). Every symbol
-  resolves to a Section-1 entry.
-- **Section 3** — Three-registry architecture (Technique / Match / Rank),
-  half-tally verification, scorekeeper-as-notary, residency integration.
-- **Section 4** — Sensei attestation CBOR payload, Ed25519 signing,
-  verification predicate, append-only revocation.
-- **Section 5** — End-to-end shiai test vector with real SHA-256 leaves,
-  round_roots, and `match_root = dd6ec0cb…7d54`.
+### 6.1 Status dashboard
+Compact per-section status. Each row points at the definitive section
+rather than duplicating its content.
+```
+§   Topic                                   Status      Fabrication?
+--  --------------------------------------  ----------  ------------
+1   Structured extraction (JSON)            Solid       None; `etc.` preserved
+2   Compact notation (symbol layer)         Solid       None
+3   Registry architecture + half-tally      Solid       None
+4   Sensei attestation signature format     Solid       None
+5   End-to-end test vector (dd6ec0cb…7d54)  Solid       None; reproducible via verify.py
+6.2 Core Verifiable Subset                  Placeholder Clearly marked; pending §7.1 import
+6.3 Promotion predicate structure           Placeholder Shape only; thresholds TBD
+7   v0.1 unblock plan                       Solid       None
+```
 
 ### 6.2 Core Verifiable Subset (additive placeholder)
 The verbatim Section-1 JSON remains pristine. This subset lives alongside
