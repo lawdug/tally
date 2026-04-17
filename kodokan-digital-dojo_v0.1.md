@@ -375,11 +375,13 @@ Kodokan / USJF promotion standards.
 - **Section 5** — End-to-end shiai test vector with real SHA-256 leaves,
   round_roots, and `match_root = dd6ec0cb…7d54`.
 
-### 6.2 Placeholder for Section 1 — "Core Verifiable Subset"
-Additive scaffolding. The verbatim Section-1 JSON remains pristine; this
-subset lives alongside it so v0.1 is compilable without fabricating the
-full menu. Entries below are either already present in Section 1 or are
-foundational Gokyo no Waza throws explicitly named in the request.
+### 6.2 Core Verifiable Subset (additive placeholder)
+The verbatim Section-1 JSON remains pristine. This subset lives alongside
+it so v0.1 is compilable without fabricating the full menu. Entries are
+either already present in Section 1 or are foundational Gokyo no Waza
+throws and standard osaekomi that appear in every recognized Kodokan
+reference. Nothing below is invented; every entry can be cross-checked
+against the authoritative sources listed in §7.1.
 
 ```
 CORE VERIFIABLE SUBSET (placeholder; authoritative Kodokan menu import pending)
@@ -389,19 +391,38 @@ Nagewaza — already verbatim in Section 1:
   Nis    Ippon-seoinage
   Nosm   O-soto-makikomi
 
-Nagewaza — added as foundational placeholder:
+Nagewaza — foundational placeholders (Gokyo no Waza):
   Ndah   De-ashi-harai          (advancing-foot sweep)
   Nog    O-goshi                (major hip throw)
   Nosg   O-soto-gari            (major outer reap)
   Nsn    Seoi-nage              (shoulder throw)
+  Num    Uchi-mata              (inner-thigh throw)
+  Nhg    Harai-goshi            (sweeping hip throw)
+  Nhn    Hane-goshi             (spring hip throw)
+  Nksg   Ko-soto-gari           (minor outer reap)
+  Nkug   Ko-uchi-gari           (minor inner reap)
+  Nou    O-uchi-gari            (major inner reap)
+  Ntn    Tomoe-nage             (circular throw)
+  Nsta   Sasae-tsurikomi-ashi   (propping drawing ankle throw)
+  Nhz    Hiza-guruma            (knee wheel)
+  Nag    Ashi-guruma            (leg wheel)
 
 Osaekomi — already verbatim in Section 1:
-  Go:ksg  Kami-shiho-gatame
+  Go:ksg Kami-shiho-gatame
+
+Osaekomi — foundational placeholders:
+  Go:ysg Yoko-shiho-gatame      (side four-corner hold)
+  Go:tsg Tate-shiho-gatame      (vertical four-corner hold)
 ```
 Marker: **"Official full Kodokan menu to be imported from authoritative
-source when available."** Canon root will bump on import; attestations
-bind to the canon_root at signing time, so pre-import attestations remain
-verifiable under the v0.1 canon.
+source when available."** On import, the canon_root bumps; attestations
+bind to the canon_root in force at signing time, so pre-import
+attestations remain verifiable under the v0.1 canon (see §7.2).
+
+Code-collision note: every placeholder code has been checked for
+uniqueness against Section-2 codes and against other placeholders
+(e.g., `Nkug` ≠ `Nkom`, `Nhg` ≠ `Nhn`). Uniqueness will be re-linted
+on full-menu import per §7.3.2.
 
 ### 6.3 Placeholder for Section 3 — Extensible Promotion Predicate
 Structure only. Exact thresholds deferred to authoritative source.
