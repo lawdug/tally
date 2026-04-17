@@ -186,10 +186,13 @@ same way a split-tally bond satisfies — both halves must match:
 - A verifier walks each pointer → recomputes leaf → checks inclusion in the
   anchored match_root → confirms the grain lines up. No claim, no anchor, no rank.
 
-Promotion rules become pure predicates over the Match Registry:
+Promotion rules become pure predicates over the Match Registry.
+Short form shown below; authoritative expanded form (adding
+`time_in_grade` and typed tables) lives in §6.3.
 ```
 promote(judoka, target_rank) ⇐
-  count(match_leaves where tori=judoka ∧ outcome ∈ {!, #}) ≥ threshold(target_rank)
+    count(match_leaves where tori = judoka ∧ outcome ∈ {!, #})
+        ≥ threshold(target_rank)
   ∧ kata_completions(judoka) ⊇ required_kata(target_rank)
   ∧ sensei_attestation(judoka, target_rank).valid
 ```
@@ -219,15 +222,18 @@ anchoring, and split-tally satisfaction semantics. The two projects share
 **no files, no vocabulary, no master model** — fraternal twins, not siblings
 in one schema.
 
-### 3.6 v0.1 → v0.2 roadmap (stubbed, not scheduled)
+### 3.6 v0.1 → v0.2 roadmap (historical snapshot)
+Items carried over to the consolidated v0.1 → v0.2 plan in §7. Status as of
+this revision:
 1. Complete the truncated technique list by re-reading the full menu source.
+   **Open** — source remainder pending.
 2. Expand `kansetsu_waza` and close every `"etc."` terminator with verified
-   entries.
-3. Define sensei attestation signature format.
-4. Draft `threshold(target_rank)` and `required_kata(target_rank)` tables from
-   Kodokan promotion standards (source pending).
+   entries. **Open** — source remainder pending.
+3. Define sensei attestation signature format. **Done — see §4.**
+4. Draft `threshold(target_rank)` and `required_kata(target_rank)` tables
+   from Kodokan promotion standards. **Open** — source pending (see §7.1).
 5. Test vector: one full shiai scored end-to-end in Section-2 notation with
-   a recomputed match_root.
+   a recomputed match_root. **Done — see §5.**
 
 ---
 
@@ -342,16 +348,15 @@ match_root    : dd6ec0cb84e5f2b96630e972c1b8e523d3faea324b2194f20fcf578ea6c77d54
 - Every notation token (`Nto`, `Nis`, `Nosm`, `Go:ksg`) resolves to a verbatim
   Section-1 entry (Tai-otoshi, Ippon-seoinage, O-soto-makikomi, Kami-shiho-gatame).
 - Any tampering with any field of any line changes a leaf, which changes a
-  round_root, which changes the match_root — split-tally grain behaviour.
+  round_root, which changes the match_root — split-tally grain behavior.
 - `match_root dd6ec0cb…7d54` is the single value an anchoring transaction
   commits to. Raw lines stay off-chain.
 
-### 5.5 Still deferred (requires source I don't have)
-- Full technique list beyond the `etc.` markers.
-- Closing the truncation at `kansetsu_waza`.
-- `threshold(target_rank)` and `required_kata(target_rank)` values grounded
-  in Kodokan promotion standards.
-Any of these needs the remainder of the menu source — not willing to fabricate.
+### 5.5 Still deferred
+See §6.2, §6.3, and §7 for the consolidated deferred-items list, source
+requirements, and validation plan. Nothing in this section is fabricated;
+unresolved items wait on the source menu remainder or on authoritative
+Kodokan / USJF promotion standards.
 
 ---
 
