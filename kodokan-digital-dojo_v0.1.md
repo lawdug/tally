@@ -344,4 +344,113 @@ match_root    : dd6ec0cb84e5f2b96630e972c1b8e523d3faea324b2194f20fcf578ea6c77d54
   in Kodokan promotion standards.
 Any of these needs the remainder of the menu source — not willing to fabricate.
 
+---
+
+## Section 6 — Current State + Minimal Placeholder Scaffolding
+
+### 6.1 What is solid (no fabrication)
+- **Section 1** — Verbatim JSON extraction from the source menu; truncation
+  at `kansetsu_waza` flagged; `etc.` markers preserved.
+- **Section 2** — Compact notation (category prefixes, technique codes,
+  outcome glyphs, line grammar, merkle anchoring shape). Every symbol
+  resolves to a Section-1 entry.
+- **Section 3** — Three-registry architecture (Technique / Match / Rank),
+  half-tally verification, scorekeeper-as-notary, residency integration.
+- **Section 4** — Sensei attestation CBOR payload, Ed25519 signing,
+  verification predicate, append-only revocation.
+- **Section 5** — End-to-end shiai test vector with real SHA-256 leaves,
+  round_roots, and `match_root = dd6ec0cb…7d54`.
+
+### 6.2 Placeholder for Section 1 — "Core Verifiable Subset"
+Additive scaffolding. The verbatim Section-1 JSON remains pristine; this
+subset lives alongside it so v0.1 is compilable without fabricating the
+full menu. Entries below are either already present in Section 1 or are
+foundational Gokyo no Waza throws explicitly named in the request.
+
+```
+CORE VERIFIABLE SUBSET (placeholder; authoritative Kodokan menu import pending)
+
+Nagewaza — already verbatim in Section 1:
+  Nto    Tai-otoshi
+  Nis    Ippon-seoinage
+  Nosm   O-soto-makikomi
+
+Nagewaza — added as foundational placeholder:
+  Ndah   De-ashi-harai          (advancing-foot sweep)
+  Nog    O-goshi                (major hip throw)
+  Nosg   O-soto-gari            (major outer reap)
+  Nsn    Seoi-nage              (shoulder throw)
+
+Osaekomi — already verbatim in Section 1:
+  Go:ksg  Kami-shiho-gatame
+```
+Marker: **"Official full Kodokan menu to be imported from authoritative
+source when available."** Canon root will bump on import; attestations
+bind to the canon_root at signing time, so pre-import attestations remain
+verifiable under the v0.1 canon.
+
+### 6.3 Placeholder for Section 3 — Extensible Promotion Predicate
+Structure only. Exact thresholds deferred to authoritative source.
+```
+promote(subject, target_rank) ⇐
+    count_matches(subject, outcome ∈ {!, #})
+        ≥ threshold_matches(target_rank)
+  ∧ kata_completions(subject) ⊇ required_kata(target_rank)
+  ∧ time_in_grade(subject, current_rank(subject))
+        ≥ min_time(target_rank)
+  ∧ sensei_attestation(subject, target_rank).valid
+
+-- Tables to be populated from authoritative source:
+threshold_matches : RANK → N           -- TBD (e.g. from Kodokan/USJF)
+required_kata     : RANK → Set<Kata>   -- TBD
+min_time          : RANK → Duration    -- TBD
+```
+The predicate is pure and composable: once the three tables land, the
+predicate need not change — only the tables.
+
+---
+
+## Section 7 — Next Concrete Steps to Unblock Full v0.1
+
+### 7.1 Suggested canonical sources
+- **Kodokan Institute** — official technique nomenclature and promotion
+  standards (same body that issued the source menu).
+- **"Kodokan Judo"** by Jigoro Kano, revised editions — standard reference
+  covering waza and kata names.
+- **IJF** — international technique naming, useful for cross-dojo parity.
+- **USJF / USA Judo** — published kyū/dan promotion requirements in a
+  format close to what `threshold_matches` / `required_kata` / `min_time`
+  expect.
+
+All of the above must be cited at import time; the citation itself becomes
+part of the canon_root preimage so the provenance of the menu is auditable.
+
+### 7.2 How the notation system should scale
+- **Prefix namespace is already partitioned** (`N`, `Go`, `Gs`, `Gk`, `K`,
+  `C`, `P`) — adding techniques never touches command or philosophy space.
+- **Code-length rule**: 3-char technique codes are preferred; on collision,
+  extend to 4 chars (e.g., `Nosg` / `Nosm`). Codes are never recycled once
+  anchored under a canon_root.
+- **Canon versioning**: each menu import produces a new `canon_root`.
+  Attestations carry the canon_root they were signed against, so
+  historical matches stay verifiable even as the menu grows.
+- **Backward compatibility**: new techniques append; existing match_roots
+  are untouched. A residency transcript built under canon v0.1 remains
+  valid under canon v1.0.
+
+### 7.3 Validation plan before finalizing v0.1
+1. **Replay the Section-5 test vector** after any canon update to confirm
+   that leaves, round_roots, and match_root are unchanged — the grain
+   must still match.
+2. **Code uniqueness lint**: run a pass over the full imported menu to
+   confirm no two techniques share a code; collisions get the 4-char
+   extension deterministically.
+3. **Pilot under a single dojo**: one residency cohort runs the full
+   scorekeeper → attestation → rank-assertion cycle end-to-end before the
+   protocol is offered to a second dojo. Cross-dojo exchange (§3.4) is
+   gated on a clean pilot.
+4. **Independent verification**: an auditor reconstructs one promotion
+   from only the public anchors and the attestation — if they can't, the
+   split-tally property is broken and v0.1 does not ship.
+
 
