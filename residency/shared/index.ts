@@ -17,4 +17,4 @@ export {
 } from "./validation";
 export { BaseCanonLoader } from "./base-loader";
 export type { CliConfig, ExtraCommand } from "./cli";
-export { runCli, ExitCodes } from "./cli";
+export { runCli, emit, emitError, ExitCodes } from "./cli";

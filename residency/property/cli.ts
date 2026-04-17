@@ -1,5 +1,5 @@
 #!/usr/bin/env ts-node
-import { runCli, ExitCodes } from "../shared";
+import { runCli, emit, ExitCodes } from "../shared";
 import { coreLoader } from "../core";
 import { propertyLoader } from "./loader";
 
@@ -16,13 +16,9 @@ process.exit(
           description:
             "print canon_root of the Core canon this pillar builds on",
           handler: (_positional, flags) => {
-            const canon = coreLoader.load();
-            const root = coreLoader.canonRoot(canon);
-            if (flags["json"] === true) {
-              console.log(JSON.stringify({ core_canon_root: root }));
-            } else {
-              console.log(root);
-            }
+            const root = coreLoader.canonRoot(coreLoader.load());
+            const jsonMode = flags["json"] === true;
+            emit(jsonMode ? { core_canon_root: root } : root, jsonMode);
             return ExitCodes.OK;
           },
         },

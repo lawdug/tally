@@ -89,7 +89,13 @@ function printHelp<T extends Canon>(cfg: CliConfig<T>): void {
   console.log(lines.join("\n"));
 }
 
-function emit(result: unknown, jsonMode: boolean): void {
+/**
+ * Emits a success result. When `jsonMode` is on, strings are JSON-quoted
+ * and objects round-trip as compact JSON; otherwise strings print bare and
+ * objects print as pretty JSON. Exposed so pillar `extraCommands` don't
+ * re-implement output formatting.
+ */
+export function emit(result: unknown, jsonMode: boolean): void {
   if (jsonMode) {
     console.log(JSON.stringify(result));
   } else if (typeof result === "string") {
@@ -99,7 +105,10 @@ function emit(result: unknown, jsonMode: boolean): void {
   }
 }
 
-function emitError(
+/**
+ * Emits an error result to stderr. Symmetric with `emit` for `jsonMode`.
+ */
+export function emitError(
   message: string,
   details: string[],
   jsonMode: boolean
