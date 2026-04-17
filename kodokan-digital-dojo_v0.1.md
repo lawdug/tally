@@ -344,15 +344,44 @@ round_root_R2 : 53891643beebf1eba5961ab5413f60542776d352666502b1e69c6c86471f40c7
 match_root    : dd6ec0cb84e5f2b96630e972c1b8e523d3faea324b2194f20fcf578ea6c77d54
 ```
 
-### 5.4 What this demonstrates
-- Every notation token (`Nto`, `Nis`, `Nosm`, `Go:ksg`) resolves to a verbatim
-  Section-1 entry (Tai-otoshi, Ippon-seoinage, O-soto-makikomi, Kami-shiho-gatame).
-- Any tampering with any field of any line changes a leaf, which changes a
-  round_root, which changes the match_root — split-tally grain behavior.
-- `match_root dd6ec0cb…7d54` is the single value an anchoring transaction
-  commits to. Raw lines stay off-chain.
+### 5.4 Step-by-step verification walkthrough
+A verifier holding only (a) the four Section-2 lines in §5.1 and (b) the
+anchored `match_root` reproduces the tree bottom-up:
 
-### 5.5 Still deferred
+1. **Recompute each leaf.** Build the preimage per §5.2, feed to SHA-256.
+   For `leaf_1`, input is `M100|R1|001|00:08|Shiro|Aka|Nto|~` and the
+   output must equal `29836fad…57b8`.
+2. **Recompute each round_root.** Concatenate the two 32-byte leaves of
+   that round (raw bytes, not hex strings) and hash:
+   `round_root_R1 = SHA-256(leaf_1 ∥ leaf_2)` → `c9cbd340…f97b`.
+3. **Recompute the match_root.** Concatenate the two round_roots and
+   hash: `match_root = SHA-256(round_root_R1 ∥ round_root_R2)` →
+   `dd6ec0cb…7d54`.
+4. **Compare** with the anchored value. Match → the record is intact.
+   Mismatch → somewhere between emission and anchoring the grain was
+   altered; the verifier can bisect to find which leaf diverges.
+
+### 5.5 Tamper demonstration (illustrative)
+Change one character in any preimage — say `Aka` → `aka` in `leaf_1` —
+and `leaf_1` becomes a different 32-byte digest. That cascades: the new
+`leaf_1` produces a new `round_root_R1`, which produces a new
+`match_root`. The altered match_root will not match the anchor. The
+grain does not line up; the tally fails to satisfy. This is the same
+failure mode that protected the Exchequer's hazelwood rods for 700 years,
+expressed in SHA-256.
+
+### 5.6 What this demonstrates
+- Every notation token (`Nto`, `Nis`, `Nosm`, `Go:ksg`) resolves to a
+  verbatim Section-1 entry (Tai-otoshi, Ippon-seoinage, O-soto-makikomi,
+  Kami-shiho-gatame).
+- Any tampering at any level changes the match_root — split-tally grain
+  behavior.
+- `match_root dd6ec0cb…7d54` is the single value an anchoring
+  transaction commits to. Raw lines stay off-chain.
+- `verify.py` in the repo root performs step 3 programmatically and
+  prints a Boolean match; see §7 for its usage and roadmap.
+
+### 5.7 Still deferred
 See §6.2, §6.3, and §7 for the consolidated deferred-items list, source
 requirements, and validation plan. Nothing in this section is fabricated;
 unresolved items wait on the source menu remainder or on authoritative
