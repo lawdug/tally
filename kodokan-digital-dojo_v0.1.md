@@ -233,29 +233,38 @@ in one schema.
 
 ## Section 4 — Sensei Attestation Signature Format
 
-### 4.1 What it attests
-A sensei attestation is the **dojo half of the split tally** for a rank claim.
-It does not create rank; it witnesses that a specific set of match leaves and
-kata completions satisfy a specific rank predicate at a specific moment.
+### 4.1 Purpose
+A sensei attestation is the dojo-side half of the split-tally for a rank
+claim. It cryptographically witnesses that, at a specific moment, a judoka
+completed a defined set of matches and kata that satisfy the promotion
+predicate for a named target rank. It does not itself create rank — it
+only provides the verifiable dojo counter-signature.
 
-### 4.2 Canonical payload (CBOR-serialized before signing)
-```
+### 4.2 Canonical Payload (CBOR-serialized)
+```cbor
 {
-  "v":          1,                         // attestation schema version
-  "subject":    <judoka_pubkey_32B>,       // who is being attested
-  "target":     "shodan" | "nidan" | ... | "6kyu",
-  "canon_root": <32B>,                     // Section-1 JSON root at time of signing
-  "citations": [
-    { "match_root": <32B>, "leaf_index": <u32> },
+  "v": 1,                          // schema version
+  "subject": h'<32-byte judoka Ed25519 pubkey>',
+  "target": "shodan" | "nidan" | ... | "rokkyu",
+  "canon_root": h'<32-byte SHA-256 of active Section-1 canon>',
+  "citations": [                   // match citations
+    {
+      "match_root": h'<32-byte>',
+      "leaf_index": <uint32>
+    },
     ...
   ],
-  "kata_cites": [
-    { "kata": "Katame-no-Kata", "match_root": <32B>, "leaf_index": <u32> },
+  "kata_cites": [                  // kata citations
+    {
+      "kata": "Katame-no-Kata",
+      "match_root": h'<32-byte>',
+      "leaf_index": <uint32>
+    },
     ...
   ],
-  "issued_at":  <unix_seconds>,
-  "dojo_id":    <string>,
-  "sensei":     <sensei_pubkey_32B>
+  "issued_at": <unix_timestamp_seconds>,
+  "dojo_id": "kodokan-tokyo-01",   // human-readable label
+  "sensei": h'<32-byte sensei Ed25519 pubkey>'
 }
 ```
 
