@@ -28,8 +28,8 @@ on success, 1 on mismatch.
   - §5.1 Match script, §5.2 Encoding spec, §5.3 Computed vector
   - §5.4 Verification walkthrough, §5.5 Tamper demo
   - §5.6 Demonstrations, §5.7 Deferred pointer
-- §6 — Current State + Placeholder Scaffolding
-  - §6.1 What is solid
+- §6 — Placeholder Scaffolding + Status Dashboard
+  - §6.1 Status dashboard
   - §6.2 Core Verifiable Subset (additive placeholder)
   - §6.3 Extensible Promotion Predicate
 - §7 — Next Concrete Steps to Unblock Full v0.1
