@@ -424,24 +424,67 @@ uniqueness against Section-2 codes and against other placeholders
 (e.g., `Nkug` ≠ `Nkom`, `Nhg` ≠ `Nhn`). Uniqueness will be re-linted
 on full-menu import per §7.3.2.
 
-### 6.3 Placeholder for Section 3 — Extensible Promotion Predicate
-Structure only. Exact thresholds deferred to authoritative source.
-```
-promote(subject, target_rank) ⇐
-    count_matches(subject, outcome ∈ {!, #})
-        ≥ threshold_matches(target_rank)
-  ∧ kata_completions(subject) ⊇ required_kata(target_rank)
-  ∧ time_in_grade(subject, current_rank(subject))
-        ≥ min_time(target_rank)
-  ∧ sensei_attestation(subject, target_rank).valid
+### 6.3 Extensible Promotion Predicate
+Structure only — exact thresholds deferred to authoritative source
+(§7.1). The predicate is pure: its domain is the Match Registry plus
+three rank-indexed tables, and its range is `{true, false}`. Nothing
+dojo-internal or personal enters the computation.
 
--- Tables to be populated from authoritative source:
-threshold_matches : RANK → N           -- TBD (e.g. from Kodokan/USJF)
-required_kata     : RANK → Set<Kata>   -- TBD
-min_time          : RANK → Duration    -- TBD
 ```
-The predicate is pure and composable: once the three tables land, the
-predicate need not change — only the tables.
+-- Sort declarations
+Judoka       : 32-byte Ed25519 pubkey
+Rank         : "rokkyu" | "gokyu" | ... | "shodan" | "nidan" | ...
+Kata         : symbolic name from Section-1 kata list
+Duration     : seconds (uint64)
+MatchLeaf    : {match_root : 32B, leaf_index : uint32}
+
+-- Derived views over the Match Registry
+count_matches(subject : Judoka, pred : MatchLeaf → Bool) : Nat
+    := |{ leaf ∈ MatchRegistry | leaf.tori = subject ∧ pred(leaf) }|
+
+kata_completions(subject : Judoka) : Set<Kata>
+    := { leaf.kata | leaf ∈ MatchRegistry, leaf.tori = subject,
+                     leaf.category = KATA, leaf.outcome = COMPLETED }
+
+time_in_grade(subject : Judoka, r : Rank) : Duration
+    := now() − last_promotion_timestamp(subject, r)
+
+-- Predicate
+promote(subject : Judoka, target : Rank) : Bool ⇐
+    count_matches(subject, λleaf. leaf.outcome ∈ {!, #})
+        ≥ threshold_matches(target)
+  ∧ kata_completions(subject) ⊇ required_kata(target)
+  ∧ time_in_grade(subject, current_rank(subject))
+        ≥ min_time(target)
+  ∧ sensei_attestation(subject, target).valid
+
+-- Tables to be populated from authoritative source (TBD, not fabricated)
+threshold_matches : Rank → Nat           -- e.g. how many ippon-class wins
+required_kata     : Rank → Set<Kata>     -- which kata must be completed
+min_time          : Rank → Duration      -- minimum time held at prior rank
+```
+
+### 6.3.1 Worked shape of a threshold table (illustrative, values TBD)
+Shape only — no numbers asserted. When the Kodokan / USJF source lands,
+filling the table is a data edit, not a schema change.
+```
+target       threshold_matches   required_kata              min_time
+-------      -----------------   ------------------------   ----------
+"rokkyu"     TBD                 { }                        TBD
+...                                                                  
+"shodan"     TBD                 { Katame-no-Kata, ... }    TBD
+"nidan"      TBD                 { Kime-no-Kata, ... }      TBD
+...                                                                  
+```
+
+### 6.3.2 Why the predicate stays pure
+- No clock drift in the hot path: `time_in_grade` reads a single stored
+  timestamp, so replays of historical matches cannot promote anyone by
+  accident.
+- No private state: every atom (`count_matches`, `kata_completions`,
+  `sensei_attestation`) resolves against publicly anchored data.
+- Composable across dojos: cross-dojo residency (§3.4) reuses the same
+  predicate with a union of match_roots from both dojos.
 
 ---
 
