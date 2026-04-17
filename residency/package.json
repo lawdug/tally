@@ -6,10 +6,15 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --require ts-node/register --test tests/canonicalize.test.ts tests/merkle.test.ts tests/validation.test.ts tests/loaders.test.ts tests/integration.test.ts",
     "core:canon-root": "ts-node core/cli.ts canon-root",
     "core:validate": "ts-node core/cli.ts validate",
+    "core:ref": "ts-node core/cli.ts ref",
     "property:canon-root": "ts-node property/cli.ts canon-root",
-    "property:validate": "ts-node property/cli.ts validate"
+    "property:validate": "ts-node property/cli.ts validate",
+    "property:ref": "ts-node property/cli.ts ref",
+    "property:core-root": "ts-node property/cli.ts core-root"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
