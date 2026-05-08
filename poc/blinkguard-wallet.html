@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tally · BlinkGuard Wallet PoC</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0a; color: #ddd; margin: 0; padding: 20px; line-height: 1.4; }
+  h1 { margin: 0 0 4px; }
+  h3 { margin-top: 0; }
+  .sub { color: #888; margin: 0 0 16px; font-size: 13px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .panel { background: #111; border: 1px solid #222; padding: 14px; border-radius: 6px; min-width: 320px; flex: 1; }
+  #video { width: 320px; height: 240px; background: #000; border-radius: 6px; transform: scaleX(-1); display: block; }
+  #status { font-family: ui-monospace, Menlo, monospace; padding: 8px; background: #000; color: #0f0; border-radius: 4px; min-height: 20px; margin-top: 8px; }
+  pre { white-space: pre-wrap; word-break: break-all; font-size: 12px; background: #000; padding: 10px; border-radius: 4px; margin: 0; }
+  button { background: #2a2; color: #000; border: 0; padding: 8px 14px; font-weight: 600; cursor: pointer; border-radius: 4px; }
+  button:hover { background: #3c3; }
+  .warn { color: #fa0; font-size: 12px; margin: 0 0 12px; }
+  label { display: inline-block; margin-right: 12px; font-size: 12px; color: #aaa; }
+  input[type=number] { width: 64px; background: #000; color: #ddd; border: 1px solid #333; padding: 4px; border-radius: 3px; }
+  .key { color: #fa0; }
+</style>
+</head>
+<body>
+
+<h1>Tally · BlinkGuard Wallet PoC</h1>
+<p class="sub">Nonverbal biometric kill-switch for a co-parenting custody wallet. Testnet / devnet only.</p>
+<p class="warn">PoC heuristic: average-frame brightness diff. Robust deployment requires facial-landmark eye-aspect-ratio (MediaPipe Face Mesh / similar). Tune Threshold and Cooldown below if it fires too often.</p>
+
+<div class="row">
+  <div class="panel" style="flex: 0 0 360px;">
+    <h3>Camera</h3>
+    <video id="video" autoplay muted playsinline></video>
+    <div id="status">BlinkGuard idle.</div>
+    <div style="margin-top: 8px;">
+      <label>Threshold <input id="threshold" type="number" value="25" min="1" max="200"></label>
+      <label>Cooldown ms <input id="cooldown" type="number" value="800" min="100" max="5000"></label>
+    </div>
+    <p style="font-size: 11px; color: #888; margin: 10px 0 0;">
+      1 blink → recycle verification (regenerate wallet)<br>
+      2+ blinks → action menu (SSS, custodial, heir, time-lock)
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Wallet</h3>
+    <button id="gen">Generate Bitcoin testnet + Solana devnet wallet</button>
+    <pre id="wallet" style="margin-top: 10px;">No wallet yet.</pre>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>Action log</h3>
+  <pre id="log">Awaiting events…</pre>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bitcoinjs-lib/5.2.0/bitcoinjs-lib.min.js"></script>
+<script src="https://unpkg.com/@solana/web3.js@1.95.3/dist/web3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/secrets.js-grempe@2.0.0/secrets.min.js"></script>
+<script>
+const log = (msg) => {
+  const el = document.getElementById('log');
+  const ts = new Date().toISOString().slice(11, 19);
+  el.textContent = `[${ts}] ${msg}\n` + el.textContent;
+};
+
+const Wallet = {
+  btc: null,
+  sol: null,
+
+  generate() {
+    const network = bitcoin.networks.testnet;
+    const keyPair = bitcoin.ECPair.makeRandom({ network });
+    const address = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network }).address;
+    const wif = keyPair.toWIF();
+    const hex = keyPair.privateKey.toString('hex');
+    this.btc = { keyPair, address, wif, hex, network };
+
+    const sk = solanaWeb3.Keypair.generate();
+    this.sol = { keypair: sk, address: sk.publicKey.toBase58() };
+
+    document.getElementById('wallet').innerHTML =
+      `BTC testnet
+  address: <span class="key">${address}</span>
+  WIF:     <span class="key">${wif}</span>
+  hex:     <span class="key">${hex}</span>
+
+SOL devnet
+  address: <span class="key">${this.sol.address}</span>
+  secret:  ${sk.secretKey.length}-byte Uint8Array (held in memory)`;
+    log('Wallet generated. BlinkGuard armed.');
+  },
+
+  reset() {
+    this.btc = null;
+    this.sol = null;
+    document.getElementById('wallet').textContent = 'No wallet yet.';
+  },
+
+  require() {
+    if (!this.btc) { log('No wallet — generate one first.'); return false; }
+    return true;
+  }
+};
+
+const Actions = {
+  shamirSplit() {
+    if (!Wallet.require()) return;
+    const shares = secrets.share(Wallet.btc.hex, 5, 3);
+    log('Shamir 3-of-5 split of BTC private key:');
+    shares.forEach((s, i) => log(`  share ${i + 1}: ${s}`));
+    log('  → distribute to: self, parent A, parent B, attorney, vault.');
+  },
+
+  custodial() {
+    if (!Wallet.require()) return;
+    log(`Custodial transfer (stub): ${Wallet.btc.address} → father (primary), uncle (backup).`);
+  },
+
+  nextOfKin() {
+    if (!Wallet.require()) return;
+    log(`Heir transfer queued: BTC ${Wallet.btc.address} + SOL ${Wallet.sol.address} → children, per-capita at majority.`);
+  },
+
+  timeLock() {
+    if (!Wallet.require()) return;
+    const { keyPair, network } = Wallet.btc;
+    const blocks = 144;
+    const seq = bitcoin.script.number.encode(blocks);
+    const redeem = bitcoin.script.compile([
+      seq,
+      bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
+      bitcoin.opcodes.OP_DROP,
+      keyPair.publicKey,
+      bitcoin.opcodes.OP_CHECKSIG,
+    ]);
+    const p2sh = bitcoin.payments.p2sh({ redeem: { output: redeem, network }, network });
+    log(`Time lock activated (CSV ${blocks} blocks ≈ 24h):`);
+    log(`  P2SH address: ${p2sh.address}`);
+    log(`  redeem hex:   ${redeem.toString('hex')}`);
+  },
+
+  recycle() {
+    log('Verification recycled — regenerating wallet.');
+    Wallet.reset();
+    Wallet.generate();
+  }
+};
+
+const BlinkGuard = {
+  video: null,
+  blinkCount: 0,
+  lastBlinkTime: 0,
+  windowMs: 1500,
+  windowTimer: null,
+
+  async init() {
+    this.video = document.getElementById('video');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      this.video.srcObject = stream;
+      await this.video.play();
+      log('Webcam active.');
+      document.getElementById('status').textContent = 'BlinkGuard armed.';
+      this.detect();
+    } catch (e) {
+      log('Camera denied: ' + e.message);
+      document.getElementById('status').textContent = 'Camera denied — BlinkGuard offline.';
+    }
+  },
+
+  detect() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 320; canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+    let last = null;
+
+    const loop = () => {
+      ctx.drawImage(this.video, 0, 0, 320, 240);
+      const data = ctx.getImageData(0, 0, 320, 240).data;
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        sum += (data[i] + data[i + 1] + data[i + 2]) / 3;
+      }
+      const cur = sum / (data.length / 4);
+
+      if (last !== null) {
+        const diff = Math.abs(cur - last);
+        const threshold = +document.getElementById('threshold').value;
+        const cooldown = +document.getElementById('cooldown').value;
+        if (diff > threshold && Date.now() - this.lastBlinkTime > cooldown) {
+          this.lastBlinkTime = Date.now();
+          this.onBlink();
+        }
+      }
+      last = cur;
+      requestAnimationFrame(loop);
+    };
+    loop();
+  },
+
+  onBlink() {
+    this.blinkCount++;
+    document.getElementById('status').textContent = `Blinks in window: ${this.blinkCount}`;
+    clearTimeout(this.windowTimer);
+    this.windowTimer = setTimeout(() => this.resolve(), this.windowMs);
+  },
+
+  resolve() {
+    const n = this.blinkCount;
+    this.blinkCount = 0;
+    document.getElementById('status').textContent = `Resolved ${n} blink(s) — armed.`;
+    if (n === 1) Actions.recycle();
+    else if (n >= 2) this.menu();
+  },
+
+  menu() {
+    const items = [
+      { label: 'Shamir Secret Sharing (3-of-5)', fn: Actions.shamirSplit },
+      { label: 'Custodial key transfer',         fn: Actions.custodial },
+      { label: 'Next-of-kin / heir transfer',    fn: Actions.nextOfKin },
+      { label: 'Activate time lock (CSV 144)',   fn: Actions.timeLock },
+      { label: 'Cancel',                         fn: () => log('Action cancelled.') }
+    ];
+    const choice = prompt(
+      'BlinkGuard action menu:\n' +
+      items.map((it, i) => `${i + 1}. ${it.label}`).join('\n') +
+      '\n\nEnter number:'
+    );
+    const idx = parseInt(choice, 10) - 1;
+    if (items[idx]) items[idx].fn();
+    else log('No action selected.');
+  }
+};
+
+document.getElementById('gen').addEventListener('click', () => Wallet.generate());
+window.addEventListener('load', () => BlinkGuard.init());
+</script>
+</body>
+</html>
