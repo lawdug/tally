@@ -23,8 +23,8 @@
 </head>
 <body>
 
-<h1>Tally · BlinkGuard Wallet PoC</h1>
-<p class="sub">Nonverbal biometric kill-switch for a co-parenting custody wallet. Testnet / devnet only.</p>
+<h1>BlinkGuard Wallet PoC</h1>
+<p class="sub">Self-custody wallet with a nonverbal biometric kill-switch. Testnet / devnet only.</p>
 <p class="warn">PoC heuristic: average-frame brightness diff. Robust deployment requires facial-landmark eye-aspect-ratio (MediaPipe Face Mesh / similar). Tune Threshold and Cooldown below if it fires too often.</p>
 
 <div class="row">
@@ -109,17 +109,17 @@ const Actions = {
     const shares = secrets.share(Wallet.btc.hex, 5, 3);
     log('Shamir 3-of-5 split of BTC private key:');
     shares.forEach((s, i) => log(`  share ${i + 1}: ${s}`));
-    log('  → distribute to: self, parent A, parent B, attorney, vault.');
+    log('  → distribute to designated recipients.');
   },
 
   custodial() {
     if (!Wallet.require()) return;
-    log(`Custodial transfer (stub): ${Wallet.btc.address} → father (primary), uncle (backup).`);
+    log(`Delegated transfer (stub): ${Wallet.btc.address} → designated recipient.`);
   },
 
   nextOfKin() {
     if (!Wallet.require()) return;
-    log(`Heir transfer queued: BTC ${Wallet.btc.address} + SOL ${Wallet.sol.address} → children, per-capita at majority.`);
+    log(`Deferred transfer queued: BTC ${Wallet.btc.address} + SOL ${Wallet.sol.address} → designated beneficiary.`);
   },
 
   timeLock() {
@@ -217,9 +217,9 @@ const BlinkGuard = {
   menu() {
     const items = [
       { label: 'Shamir Secret Sharing (3-of-5)', fn: Actions.shamirSplit },
-      { label: 'Custodial key transfer',         fn: Actions.custodial },
-      { label: 'Next-of-kin / heir transfer',    fn: Actions.nextOfKin },
       { label: 'Activate time lock (CSV 144)',   fn: Actions.timeLock },
+      { label: 'Delegated transfer (stub)',      fn: Actions.custodial },
+      { label: 'Deferred transfer (stub)',       fn: Actions.nextOfKin },
       { label: 'Cancel',                         fn: () => log('Action cancelled.') }
     ];
     const choice = prompt(
